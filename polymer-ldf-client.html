@@ -60,10 +60,9 @@ Element providing solution to no problem in particular.
         this._DEBUG && console.log('Start fragment:\n' + this.startFragment);
         this._DEBUG && console.log('Response format:\n' + this.responseFormat);
 
-        var fragmentsClient = new ldf.FragmentsClient(this.startFragment);
-        var results = new ldf.SparqlIterator(this.query, {
-          fragmentsClient: fragmentsClient,
-        });
+        var config = { prefixes: prefixes, logger: this._logger };
+        config.fragmentsClient = new ldf.FragmentsClient(this.startFragment, config);
+        var results = new ldf.SparqlIterator(this.query, config);
 
         if (this.responseFormat === 'streaming') {
           // Partial response
