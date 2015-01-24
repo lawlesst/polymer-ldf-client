@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!--
+Copyright 2013 The Polymer Authors. All rights reserved.
+Use of this source code is governed by a BSD-style
+license that can be found in the LICENSE file.
+-->
+<html>
+  <head>
+    <title>Polymer OrgRef VIVO</title>
+    <meta charset="utf-8">
+    <!-- load platform -->
+    <link rel="import" href="polymer-jsonp.html"/>
+    <style>
+    img {
+      display: inline;
+      float: left;
+      padding: 1em;
+    }
+    </style>
+  </head>
+  <body>
+    <polymer-jsonp auto url=" http://en.wikipedia.org/w/api.php?&action=query&prop=pageimages|extracts&format=json&pithumbsize=125&exlimit=1&exsentences=3&pageids=7954422&callback=?"></polymer-jsonp>
+
+  <template bind="{{wiki}}">
+    <h1>{{title}}</h1>
+    <div>
+      <img src="{{ thumbnail.source }}"/>
+      <p>{{ abstract }}</p>
+    </div>
+  </template>
+
+  <script>
+    document.addEventListener('polymer-ready', function() {
+      var jsonp = document.querySelector("polymer-jsonp");
+      jsonp.addEventListener("polymer-response",
+        function(e) {
+          var data = e.detail.response.query.pages;
+          var key = Object.keys(data)[0];
+          var winfo = data[key];
+          console.debug(winfo);
+          winfo['abstract'] = stripHTML(winfo.extract);
+          delete winfo.extract;
+          document.querySelector('template').model = {
+            wiki: data[key]
+          };
+        }
+      );
+    });
+    function stripHTML(dirtyString) {
+      var container = document.createElement('div');
+      container.innerHTML = dirtyString;
+      return container.textContent || container.innerText;
+    }
+  </script>
+  </body>
+</html>
