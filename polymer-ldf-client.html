@@ -8,6 +8,7 @@
     subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 -->
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="polymer-jsonp.html"/>
 <script src="./dependencies/jquery-2.1.0.js"></script>
 <script src="./dependencies/ldf-client-browser.js"></script>
 <script src="./dependencies/prefixes.js"></script>
@@ -24,7 +25,17 @@ Element providing solution to no problem in particular.
 @status alpha
 @homepage http://github.com/tomayac/polymer-ldf-client-
 -->
-<polymer-element name="polymer-ldf-client" hidden attributes="startFragment query responseFormat auto">
+<polymer-element name="polymer-ldf-client" attributes="startFragment query responseFormat auto">
+<template>
+  <polymer-jsonp id="jsonp" url="{{wikipediaQuery}}"></polymer-jsonp>
+  <template id="wikip" bind="{{wiki}}">
+    <h1>{{title}}</h1>
+    <div>
+      <img src="{{ thumbnail.source }}"/>
+      <p>{{ abstract }}</p>
+    </div>
+  </template>
+</template>
   <script>
     Polymer({
 
@@ -32,7 +43,21 @@ Element providing solution to no problem in particular.
 
       _results: false,
 
-      query: '',
+      getQuery: function () {
+        rq = "SELECT DISTINCT ?org ?pid ?label ?url WHERE {" +
+                "?org owl:sameAs <" + this.localURI + ">." +
+                "?org dbpediaowl:wikiPageID ?pid ." +
+                "OPTIONAL {" +
+                  "?org rdfs:label ?label ." +
+                  "?org schema:url ?url ." +
+                "}" +
+               "}";
+        return rq
+      },
+
+      localURI: '',
+
+      ldfServer: '',
 
       startFragment: '',
 
@@ -40,24 +65,40 @@ Element providing solution to no problem in particular.
 
       auto: false,
 
+      wikipediaQuery: '',
+
       ready: function() {
         ldf.Logger.setLevel('warning');
         this.executeQuery();
+        this.addEventListener('polymer-response', this.wikipediaLoaded);
       },
 
       executeQuery: function() {
         var that = this;
-        if (!this.query) {
-          this._DEBUG && console.log('No query given.');
-          return;
-        }
-        if (!this.startFragment) {
-          this._DEBUG && console.log('No start fragment given.');
+        // if (!this.query) {
+        //   this._DEBUG && console.log('No query given.');
+        //   return;
+        // }
+        this.localURI = this.getAttribute("localURI");
+        this.ldfServer = this.getAttribute("ldfServer");
+        this.query = this.getQuery();
+
+        //debugger
+        if (!this.localURI) {
+          this._DEBUG && console.log('No localURI given.');
           return;
         }
 
+        if (!this.ldfServer) {
+          this._DEBUG && console.log('No LDF server given.');
+          return;
+        }
+
+        this.query = this.query.replace(/\|localURI\|/i, "<" + this.localURI + ">");;
+        this.startFragment = this.ldfServer + "?subject=" + this.localURI;
+
         this._DEBUG && console.log('Query:\n' + this.query);
-        this._DEBUG && console.log('Start fragment:\n' + this.startFragment);
+        this._DEBUG && console.log('Local URI:\n' + this.localURI);
         this._DEBUG && console.log('Response format:\n' + this.responseFormat);
 
         var config = { prefixes: prefixes, logger: this._logger };
@@ -68,20 +109,48 @@ Element providing solution to no problem in particular.
           // Partial response
           var data = '';
           results.on('data', function(chunk) {
+            var pid = chunk["?pid"].replace(/\"/g, "");
+            that.wikipURL(pid);
+            console.debug(that.wikipediaQuery);
+            //call the query.
+            if (! that.$.jsonp.loading) {
+             that.$.jsonp.go();
+           }
             chunk = JSON.stringify(chunk);
             data += chunk;
             that.fire('ldf-query-streaming-response-partial', {
               response: chunk
             });
           });
-          // Complete response
+          //Complete response
           results.on('end', function() {
-            that.fire('ldf-query-streaming-response-end', {response: data});
+           that.fire('ldf-query-streaming-response-end', {response: data});
           });
         } else if (this.responseFormat === 'polling') {
           this._results = results;
           return this.showNext();
         }
+      },
+
+      wikipURL: function (pid) {
+        var that = this;
+        var jp = 'http://en.wikipedia.org/w/api.php?&action=query&prop=pageimages|extracts&format=json&pithumbsize=125&exlimit=1&exsentences=3&pageids=' + pid +"&callback=?";
+        console.debug(jp);
+        that.wikipediaQuery = jp;
+      },
+
+      wikipediaLoaded: function (e) {
+        console.log("Got your data");
+        var data = e.detail.response.query.pages;
+          var key = Object.keys(data)[0];
+          var winfo = data[key];
+          console.debug(winfo);
+          if (winfo !== undefined) {
+            winfo['abstract'] = stripHTML(winfo.extract);
+            delete winfo.extract;
+            var t = this.$.wikip;
+            t.model = { wiki: data[key] };
+          };
       },
 
       go: function() {
@@ -117,6 +186,21 @@ Element providing solution to no problem in particular.
         }
       }
 
+
+
     });
+
+    function stripHTML(dirtyString) {
+        var container = document.createElement('div');
+        container.innerHTML = dirtyString;
+        return container.textContent || container.innerText;
+    }
+
+    function stripHTML(dirtyString) {
+      var container = document.createElement('div');
+      container.innerHTML = dirtyString;
+      return container.textContent || container.innerText;
+    }
   </script>
 </polymer-element>
+

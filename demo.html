@@ -28,43 +28,24 @@
       td {
         vertical-align: top;
       }
+      img {
+      display: inline;
+      float: left;
+      padding: 1em;
+      }
     </style>
   </head>
   <body unresolved>
 
     <h1>An example of using <code>&lt;polymer-ldf-client&gt;</code></h1>
-
     <p>Streaming results are displayed in <pre class="streaming">red</pre></p>
-    <p>Polling results are displayed in <pre class="polling">blue</pre></p>
+    <table><tr><td id="td1"></td></tr></table>
 
     <polymer-ldf-client
         id="polymer-ldf-client-streaming"
-        responseFormat="streaming"
-        query="SELECT DISTINCT ?frag WHERE {
-                 ?a a &lt;http://advene.org/ns/cinelab/ld#Annotation&gt; ;
-                   &lt;http://advene.org/ns/cinelab/ld#hasFragment&gt; ?frag ;
-                   &lt;http://advene.org/ns/cinelab/ld#taggedWith&gt;
-                     [ &lt;http://purl.org/dc/elements/1.1/title&gt; 'personnages: Margaret'],
-                     [ &lt;http://purl.org/dc/elements/1.1/title&gt; 'personnages: Grand Papa Pollitt'];
-                   .
-               }"
-        startFragment="http://spectacleenlignes.fr/ldf/spectacle_en_lignes">
+        ldfServer="http://localhost:5000/orgref"
+        localURI="http://vivo.cornell.edu/individual/n22163"
     </polymer-ldf-client>
-
-    <polymer-ldf-client
-        id="polymer-ldf-client-polling"
-        responseFormat="polling"
-        query="SELECT DISTINCT ?tag WHERE {
-                 [ a &lt;http://advene.org/ns/cinelab/ld#Annotation&gt; ;
-                   &lt;http://advene.org/ns/cinelab/ld#taggedWith&gt;
-                     [ &lt;http://purl.org/dc/elements/1.1/title&gt;  ?tag ]
-                  ]
-               }"
-        startFragment="http://spectacleenlignes.fr/ldf/spectacle_en_lignes">
-    </polymer-ldf-client>
-
-    <button value="Poll" id="button">Poll</button>
-    <table><tr><td id="td1"></td><td id="td2"></td></tr></table>
 
     <script>
       document.addEventListener('polymer-ready', function() {
@@ -80,23 +61,29 @@
         });
         // Get notified once all data is received
         ldfClientStreaming.addEventListener('ldf-query-streaming-response-end', function() {
-          alert('Received all data');
+          //alert('Received all data');
+          var done = document.createElement('h1');
+          done.textContent = "Data finished loading.";
+          document.querySelector('#td1').appendChild(done);
+
         });
 
-        var ldfClientPolling = document.querySelector('#polymer-ldf-client-polling');
-        // Poll for data
-        ldfClientPolling.addEventListener('ldf-query-polling-response', function(e) {
-          var pre = document.createElement('pre');
-          pre.classList.add('polling');
-          pre.textContent = JSON.stringify(e.detail.response);
-          document.querySelector('#td2').appendChild(pre);
-        });
+        // var ldfClientPolling = document.querySelector('#polymer-ldf-client-polling');
+        // // Poll for data
+        // ldfClientPolling.addEventListener('ldf-query-polling-response', function(e) {
+        //   var pre = document.createElement('pre');
+        //   pre.classList.add('polling');
+        //   pre.textContent = JSON.stringify(e.detail.response);
+        //   document.querySelector('#td2').appendChild(pre);
+        // });
 
-        var button = document.querySelector('#button');
-        button.addEventListener('click', function() {
-          ldfClientPolling.showNext();
-        });
+        // var button = document.querySelector('#button');
+        // button.addEventListener('click', function() {
+        //   ldfClientPolling.showNext();
+        // });
+        //
       });
+
     </script>
   </body>
 </html>
