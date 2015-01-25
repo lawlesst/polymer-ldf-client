@@ -16,35 +16,17 @@
     <script src="../webcomponentsjs/webcomponents.min.js"></script>
     <link rel="import" href="polymer-ldf-client.html">
     <style>
-      h1 {
-        font-size: 1.2em;
-      }
-      pre.streaming {
-        color: red;
-      }
-      pre.polling {
-        color: blue;
-      }
-      td {
-        vertical-align: top;
-      }
-      img {
-      display: inline;
-      float: left;
-      padding: 1em;
-      }
     </style>
   </head>
   <body unresolved>
 
     <h1>An example of using <code>&lt;polymer-ldf-client&gt;</code></h1>
-    <p>Streaming results are displayed in <pre class="streaming">red</pre></p>
     <table><tr><td id="td1"></td></tr></table>
 
     <polymer-ldf-client
         id="polymer-ldf-client-streaming"
-        ldfServer="http://localhost:5000/orgref"
-        localURI="http://vivo.cornell.edu/individual/n22163"
+        ldfServer="http://ldf-vivo.herokuapp.com/orgref"
+        localURI="http://vivo.ufl.edu/individual/n59396"
     </polymer-ldf-client>
 
     <script>

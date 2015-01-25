@@ -27,13 +27,25 @@ Element providing solution to no problem in particular.
 -->
 <polymer-element name="polymer-ldf-client" attributes="startFragment query responseFormat auto">
 <template>
+  <link rel="stylesheet" href="global.css">
   <polymer-jsonp id="jsonp" url="{{wikipediaQuery}}"></polymer-jsonp>
   <template id="wikip" bind="{{wiki}}">
-    <h1>{{title}}</h1>
-    <div>
-      <img src="{{ thumbnail.source }}"/>
-      <p>{{ abstract }}</p>
-    </div>
+    <section>
+      <div id="org-info" class="clearfix">
+        <div class="pic">
+            <img src="{{ thumbnail.source }}" width="150" height="150" />
+        </div>
+        <div class="data">
+          <h1>{{title}}</h1>
+          <h4><a href="{{url}}">{{url}}</a></h4>
+          <div class="sep"></div>
+          <div class="abstract">
+            {{ abstract }}
+            <small><a href="http://en.wikipedia.org/?curid={{pageid}}">Wikipedia</a></small>
+          </div>
+        </div>
+      </div>
+    </section>
   </template>
 </template>
   <script>
@@ -49,6 +61,8 @@ Element providing solution to no problem in particular.
                 "?org dbpediaowl:wikiPageID ?pid ." +
                 "OPTIONAL {" +
                   "?org rdfs:label ?label ." +
+                "}" +
+                "OPTIONAL {" +
                   "?org schema:url ?url ." +
                 "}" +
                "}";
@@ -66,6 +80,10 @@ Element providing solution to no problem in particular.
       auto: false,
 
       wikipediaQuery: '',
+
+      ldfData: null,
+
+      url: '',
 
       ready: function() {
         ldf.Logger.setLevel('warning');
@@ -109,7 +127,8 @@ Element providing solution to no problem in particular.
           // Partial response
           var data = '';
           results.on('data', function(chunk) {
-            var pid = chunk["?pid"].replace(/\"/g, "");
+            var pid = stripQuotes(chunk["?pid"]);
+            that.url = stripQuotes(chunk["?url"]);
             that.wikipURL(pid);
             console.debug(that.wikipediaQuery);
             //call the query.
@@ -134,19 +153,17 @@ Element providing solution to no problem in particular.
 
       wikipURL: function (pid) {
         var that = this;
-        var jp = 'http://en.wikipedia.org/w/api.php?&action=query&prop=pageimages|extracts&format=json&pithumbsize=125&exlimit=1&exsentences=3&pageids=' + pid +"&callback=?";
-        console.debug(jp);
+        var jp = 'http://en.wikipedia.org/w/api.php?&action=query&prop=pageimages|extracts&format=json&pithumbsize=125&exlimit=1&exsentences=2&pageids=' + pid +"&callback=?";
         that.wikipediaQuery = jp;
       },
 
       wikipediaLoaded: function (e) {
-        console.log("Got your data");
         var data = e.detail.response.query.pages;
           var key = Object.keys(data)[0];
           var winfo = data[key];
-          console.debug(winfo);
           if (winfo !== undefined) {
             winfo['abstract'] = stripHTML(winfo.extract);
+            winfo['url'] = this.url;
             delete winfo.extract;
             var t = this.$.wikip;
             t.model = { wiki: data[key] };
@@ -196,11 +213,10 @@ Element providing solution to no problem in particular.
         return container.textContent || container.innerText;
     }
 
-    function stripHTML(dirtyString) {
-      var container = document.createElement('div');
-      container.innerHTML = dirtyString;
-      return container.textContent || container.innerText;
+    function stripQuotes(raw) {
+      return raw.replace(/\"/g, "");
     }
+
   </script>
 </polymer-element>
 
